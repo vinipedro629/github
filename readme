@@ -1,31 +1,32 @@
-# O que fazer diante do erro 404: NOT_FOUND
+O que fazer agora?
 
-**Erro encontrado:**  
-404: NOT_FOUND  
-Code: NOT_FOUND  
-ID: gru1::l9dwr-1767719891962-3128674f8684
+O erro ocorreu porque a função Serverless do Vercel apresentou uma falha interna (500: INTERNAL_SERVER_ERROR). Veja abaixo detalhes específicos do erro:
 
-## Possíveis causas
-- O recurso (endpoint, página ou arquivo) solicitado não existe ou foi movido.
-- A rota ou caminho informado está incorreto.
-- Problemas de configuração no arquivo `vercel.json`.
+---
 
-## Como resolver
+**Erro no deploy (`api/index.py`):**
+```
+ModuleNotFoundError: No module named 'flask'
+```
+O log completo indica que o Python tentou importar Flask no início do arquivo `api/index.py`, mas a biblioteca não foi encontrada no ambiente da função serverless.
 
-1. **Verifique a URL ou rota acessada:**  
-   Confirme se está correta e corresponde a um arquivo/página existente no seu projeto.
+---
 
-2. **Revise seu arquivo `vercel.json`:**  
-   Certifique-se de que as rotas (`routes`) estão corretas e direcionando para os arquivos certos.
+**Instruções para resolver (para o proprietário do site):**
+1. Garanta que o arquivo `requirements.txt` existe na raiz do seu projeto e contém a linha:
+   ```
+   flask
+   ```
+2. Se já existe, verifique se não há erros de digitação ("flask" deve estar em letra minúscula).
+3. Faça o deploy novamente após confirmar o passo acima.
+4. Se continuar com problemas, acesse o [painel do Vercel](https://vercel.com/dashboard) e verifique os logs do deploy, procurando por mensagens de erro como esta:
+   ```
+   ModuleNotFoundError: No module named 'flask'
+   ```
+5. Consulte a [documentação da Vercel para Python](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python) para orientações sobre gerenciamento de dependências.
 
-3. **Confira se o arquivo existe:**  
-   Por exemplo, se estiver acessando `/api/index.py`, garanta que esse arquivo está na pasta correta do projeto.
+**Se você é um visitante:**
+- Tente recarregar a página após alguns minutos.
+- Se o problema persistir, entre em contato com o proprietário do site.
 
-4. **Veja os logs de implantação:**  
-   Acesse o dashboard da Vercel para inspecionar logs e mensagens de erro mais detalhadas.
-
-5. **Consulte a documentação:**  
-   [Documentação da Vercel](https://vercel.com/docs)
-
-Se o problema persistir após todas as verificações acima, considere pedir ajuda na comunidade ou suporte da Vercel.
-
+Se precisar de mais assistência, compartilhe os logs completos do erro para que seja possível analisar melhor.
