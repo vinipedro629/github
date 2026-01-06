@@ -1,0 +1,95 @@
+
+# Guia rápido para rodar este projeto Flask no Vercel
+
+> **Atenção:** O Vercel não suporta nativamente aplicações Flask (Python); normalmente ele é para front-ends (Next.js etc). Mas é possível rodar projetos Flask usando o [vercel-python](https://github.com/juancarlospaco/vercel-python) (com limitações) ou adaptando via Serverless Functions.
+
+## Passos recomendados:
+
+### 1. Estrutura mínima (ajuste):
+
+```
+/
+├── api/
+│   └── index.py         # Sua aplicação Flask (renomeie app.py para index.py e mova para api/)
+├── templates/
+│   └── index.html (e outros)
+├── static/
+│   └── style.css
+├── requirements.txt
+├── vercel.json
+```
+
+### 2. Adapte para Serverless (no Vercel, cada requisição = novo processo)
+
+- Remova dependências de banco de dados local (`database.db`) se possível. Prefira SQLite em memória ou serviços externos (Ex: Supabase, PlanetScale, etc).
+- No arquivo `index.py`:
+
+```python
+from flask import Flask
+# ... (seu código atual)
+
+app = Flask(__name__)
+
+# Resto do seu código
+
+# Handler específico para Vercel
+def handler(environ, start_response):
+    return app(environ, start_response)
+```
+
+### 3. Crie o arquivo `requirements.txt`
+Inclua:
+```
+Flask
+```
+
+(E dependências adicionais que seu projeto usa)
+
+### 4. Crie o arquivo `vercel.json`:
+```json
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "api/index.py" }
+  ]
+}
+```
+
+### 5. Deploy
+
+1. Suba seu projeto em repositório Github.
+2. Acesse [vercel.com](https://vercel.com), conecte seu repo e selecione **Python** como runtime (não Node.js).
+3. Faça deploy e monitore o log.
+
+---
+
+**Observações importantes:**
+- Funções serverless no Vercel são efêmeras: tudo que depende de escrita em disco (ex: SQLite) pode dar problema.
+- Para projetos Flask profissionais, considere usar [Render.com](https://render.com/), [Fly.io](https://fly.io/), [Railway](https://railway.app/) ou outros serviços que suportam aplicações Python de forma nativa.
+- Leia mais:  
+  - https://github.com/juancarlospaco/vercel-python
+  - https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python
+
+---
+
+**Exemplo básico de `api/index.py`**:
+
+```python
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return render_template("index.html")
+
+def handler(environ, start_response):
+    return app(environ, start_response)
+```
+
+---
+
+Se precisar rodar em produção, considere usar um serviço dedicado para backend Python!

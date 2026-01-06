@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Busca de Usuário GitHub</title>
+
+    <!-- Meta Tags Essenciais para SEO -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Busque usuários do GitHub, visualize repositórios, veja commits recentes e adicione usuários aos seus favoritos. Uma plataforma prática e segura para personalizar suas buscas.">
+    <meta name="keywords" content="GitHub, busca de usuário, repositórios, favoritos, commits, Flask, aplicação web, Pedro Vinícius Silva Magalhães">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Pedro Vinícius Silva Magalhães">
+    <link rel="canonical" href="{{ request.url_root | trim('/') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+    <!-- Open Graph (OG) Meta Tags para Mídias Sociais -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Busca de Usuário GitHub">
+    <meta property="og:description" content="Descubra e favorite perfis, explore repositórios e veja as atividades recentes de usuários do GitHub. Desenvolvido por Pedro Vinícius Silva Magalhães.">
+    <meta property="og:url" content="{{ request.url_root | trim('/') }}">
+    <meta property="og:site_name" content="Favoritos de Usuários do GitHub">
+    <!-- og:image removido conforme solicitado -->
+    <meta property="og:locale" content="pt_BR">
+
+    <!-- CSS externo com fallback interno -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.remove();document.getElementById('fallback-style').disabled=false;">
+    <style id="fallback-style" disabled>
+        body { font-family: Arial, sans-serif; background: #f8f8f8; margin: 0; padding: 0; }
+        .container { max-width: 800px; margin: 30px auto; background: #fff; border-radius: 8px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,.08);}
+        h1 { text-align: center; color: #24292e; }
+        .inicio-link {
+            display: inline-block;
+            margin-bottom: 18px;
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 1.08em;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 18px;
+        }
+        .inicio-link:hover { text-decoration: underline; color: #174f84;}
+        form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;}
+        input[type="text"], select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button { background: #2ea44f; color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer;}
+        button:hover { background: #24843b;}
+        .error { color: #d73a49; margin: 16px 0; text-align: center;}
+        .user-info, .repos, .commits { margin: 24px 0 0 0;}
+        .user-info img { border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.07);}
+        .repo-list, .commit-list { list-style: none; padding: 0;}
+        .repo-list li, .commit-list li { padding: 8px 0; border-bottom: 1px solid #eee;}
+        .repo-list li:last-child, .commit-list li:last-child { border-bottom: none; }
+        .user-header { display:flex; align-items:center; gap:20px; }
+        .project-meta { color: #888; font-size: 0.90em;}
+        .auth-links { text-align: right; margin-bottom: 12px;}
+        .auth-links a { color: #0366d6; text-decoration: none; margin-left: 10px;}
+        .auth-links span { color: #444; }
+        .flash { background: #ffe6e6; color: #a33; border: 1px solid #f3d6d6; padding: 10px 12px; border-radius: 4px; margin: 12px 0; text-align: center;}
+        .favorite-btn { 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 1.7em;
+            color: #d73a49; 
+            padding: 0 8px 0 0;
+            vertical-align: middle;
+            outline: none;
+        }
+        .favorite-btn[disabled] {
+            filter: grayscale(60%);
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .favorite-heart {
+            transition: color 0.2s;
+        }
+        .favorite-btn:hover .favorite-heart {
+            color: #c21830;
+        }
+        .favorite-label {
+            font-size: 0.93em;
+            color: #d73a49;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .favorites-link {
+            background: none;
+            border: none;
+            color: #0366d6;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1em;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: color 0.16s;
+            display: inline-block;
+        }
+        .favorites-link:hover {
+            color: #174f84;
+            text-decoration: underline;
+        }
+        .favorites-icon {
+            font-size: 1.1em;
+            margin-right: 3px;
+            vertical-align: -2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('index') }}" class="inicio-link">Início</a>
+        <div class="auth-links">
+            {% if session.user_id %}
+                <span>Você está logado</span>
+                <a href="{{ url_for('favoritos') }}" class="favorites-link" title="Seus Favoritos">
+                    <span class="favorites-icon">&#9733;</span>Favoritos
+                </a>
+                <a href="{{ url_for('auth.logout') }}">Sair</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Entrar</a>
+                <a href="{{ url_for('auth.register') }}">Criar conta</a>
+            {% endif %}
+        </div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="flash">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <h1>Projetos Publicados Mais Recentes</h1>
+        <form method="post">
+            <input type="text" name="username" placeholder="Digite o nome de usuário do GitHub" value="{{ request.form.username or '' }}" required>
+            {% if repos %}
+                <select name="repo">
+                    <option value="">Selecione um repositório</option>
+                    {% for repo in repos %}
+                        <option value="{{ repo.name }}" {% if selected_repo==repo.name %}selected{% endif %}>{{ repo.name }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            <button type="submit">Buscar</button>
+        </form>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        {% if user_info %}
+        <div class="user-info">
+            <div class="user-header">
+                <img src="{{ user_info.avatar_url }}" alt="Avatar" width="80" height="80">
+                <div>
+                    <h2 style="display: inline-block; margin: 0;">
+                        {{ user_info.name or user_info.login }}
+                    </h2>
+                    {% if session.user_id %}
+                        <form method="post" action="{{ url_for('favorite_github_user', github_username=user_info.login) }}" style="display: inline;">
+                            <button class="favorite-btn" title="{% if is_favorited %}Remover dos favoritos{% else %}Adicionar aos favoritos{% endif %}" aria-label="Favoritar usuário" type="submit">
+                                {% if is_favorited %}
+                                    <span class="favorite-heart" style="color:#d73a49;">&#10084;&#65039;</span>
+                                {% else %}
+                                    <span class="favorite-heart" style="color:#bbb;">&#9825;</span>
+                                {% endif %}
+                            </button>
+                            <span class="favorite-label">{% if is_favorited %}Favoritado{% endif %}</span>
+                        </form>
+                    {% else %}
+                        <button class="favorite-btn" disabled title="Faça login para favoritar" aria-label="Favoritar usuário">
+                            <span class="favorite-heart" style="color:#bbb;">&#9825;</span>
+                        </button>
+                        <span class="favorite-label" style="color:#888;">(faça login para favoritar)</span>
+                    {% endif %}
+                    <p><a href="{{ user_info.html_url }}" target="_blank">@{{ user_info.login }}</a></p>
+                    {% if user_info.bio %}<p>{{ user_info.bio }}</p>{% endif %}
+                    {% if user_info.location %}<span>📍 {{ user_info.location }}</span><br>{% endif %}
+                    <span>👥 {{ user_info.followers }} seguidores • {{ user_info.following }} seguindo</span><br>
+                    <span>📦 {{ user_info.public_repos }} repositórios públicos</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if repos %}
+            <div class="repos">
+                <h3>Repositórios Recentes</h3>
+                <ul class="repo-list">
+                    {% for repo in repos %}
+                        <li>
+                            <a href="{{ repo.html_url }}" target="_blank">{{ repo.name }}</a>
+                            {% if repo.description %}<br><span style="color: #646464;">{{ repo.description }}</span>{% endif %}
+                            <div class="project-meta">
+                                Criado em: {{ repo.created_at[:10] | replace('-', '/') }}
+                                {% if repo.pushed_at %} &bull; Última atualização: {{ repo.pushed_at[:10] | replace('-', '/') }}{% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if commits %}
+            <div class="commits">
+                <h3>Commits recentes em <span style="color: #0366d6;">{{ selected_repo }}</span></h3>
+                <ul class="commit-list">
+                    {% for commit in commits[:10] %}
+                        <li>
+                            <strong>{{ commit.commit.message | truncate(80) }}</strong><br>
+                            <small>{{ commit.commit.author.name }} &mdash; {{ commit.commit.author.date[:10] }}</small>
+                            <br>
+                            <a href="{{ commit.html_url }}" target="_blank">Ver commit</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% elif selected_repo %}
+            <div class="commits">
+                <p>Nenhum commit encontrado para este repositório.</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

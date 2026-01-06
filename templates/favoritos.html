@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Seus Favoritos do GitHub</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" onerror="this.onerror=null;this.remove();document.getElementById('fallback-style').disabled=false;">
+    <style id="fallback-style" disabled>
+        body { font-family: Arial, sans-serif; background: #f8f8f8; margin: 0; padding: 0;}
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,.08);}
+        h1 { text-align: center; color: #24292e; margin-bottom: 28px;}
+        .favorites-list { list-style: none; padding: 0;}
+        .favorites-list li { padding: 14px 0 14px 0; border-bottom: 1px solid #eee; text-align: left;}
+        .favorites-list li:last-child { border-bottom: none;}
+        .favorite-username { font-size: 1.1em; color: #0366d6; text-decoration: none; font-weight: bold;}
+        .favorite-username:hover { text-decoration: underline; color: #174f84;}
+        .empty-msg { color: #888; text-align: center; font-size: 1.07em; margin: 34px 0;}
+        .back-link {
+            display: inline-block;
+            margin-bottom: 18px;
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 0.99em;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .back-link:hover { text-decoration: underline; color: #174f84;}
+        .star-icon {
+            color: #ffb624;
+            margin-right: 8px;
+            font-size: 1.06em;
+            vertical-align: -1px;
+        }
+        .inicio-link {
+            display: inline-block;
+            margin-bottom: 18px;
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 1.04em;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 18px;
+        }
+        .inicio-link:hover { text-decoration: underline; color: #174f84;}
+        .flash { background: #ffe6e6; color: #a33; border: 1px solid #f3d6d6; padding: 10px 12px; border-radius: 4px; margin: 12px 0; text-align: center;}
+    </style>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('index') }}" class="inicio-link">Início</a>
+        <a href="{{ url_for('index') }}" class="back-link">&larr; Voltar para a busca</a>
+        <h1>Seus Favoritos <span class="star-icon">&#9733;</span></h1>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="flash">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if favoritos and favoritos|length > 0 %}
+            <ul class="favorites-list">
+                {% for username in favoritos %}
+                    <li>
+                        <a href="{{ url_for('index') }}?username={{ username }}" class="favorite-username">
+                            {{ username }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty-msg">
+                Você ainda não favoritou nenhum usuário.<br>
+                Volte e adicione seus usuários preferidos!
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

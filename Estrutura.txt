@@ -1,0 +1,10 @@
+pasta templates - favoritos.html,index.html,login.html,register.html
+
+app.py
+auth.py
+database.db
+github_activity.py
+github.py.
+models.py
+.venv.
+__pychache__
