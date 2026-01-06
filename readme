@@ -1,32 +1,40 @@
-O que fazer agora?
+Na linha 7 do arquivo `api/index.py` está definida a chave secreta da aplicação Flask, assim:
 
-O erro ocorreu porque a função Serverless do Vercel apresentou uma falha interna (500: INTERNAL_SERVER_ERROR). Veja abaixo detalhes específicos do erro:
-
----
-
-**Erro no deploy (`api/index.py`):**
+```python
+app.secret_key = 'sua_chave_supersecreta_aqui'  # Em produção, use uma chave secreta forte
 ```
-ModuleNotFoundError: No module named 'flask'
+
+**Importante:** Use uma chave secreta forte (única e imprevisível) em produção e não compartilhe essa chave publicamente.
+Você deve definir uma chave secreta forte e única para sua aplicação Flask. Nunca use uma chave simples ou compartilhada publicamente.
+
+Você pode gerar uma chave secreta de forma segura usando Python. No terminal, execute:
+
+```python
+import secrets
+print(secrets.token_hex(32))
 ```
-O log completo indica que o Python tentou importar Flask no início do arquivo `api/index.py`, mas a biblioteca não foi encontrada no ambiente da função serverless.
 
----
+O valor gerado pode ser copiado e usado como sua `app.secret_key`:
 
-**Instruções para resolver (para o proprietário do site):**
-1. Garanta que o arquivo `requirements.txt` existe na raiz do seu projeto e contém a linha:
-   ```
-   flask
-   ```
-2. Se já existe, verifique se não há erros de digitação ("flask" deve estar em letra minúscula).
-3. Faça o deploy novamente após confirmar o passo acima.
-4. Se continuar com problemas, acesse o [painel do Vercel](https://vercel.com/dashboard) e verifique os logs do deploy, procurando por mensagens de erro como esta:
-   ```
-   ModuleNotFoundError: No module named 'flask'
-   ```
-5. Consulte a [documentação da Vercel para Python](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python) para orientações sobre gerenciamento de dependências.
+```python
+app.secret_key = 'COLE_AQUI_A_SUA_CHAVE_SECRETA_GERADA'
+```
 
-**Se você é um visitante:**
-- Tente recarregar a página após alguns minutos.
-- Se o problema persistir, entre em contato com o proprietário do site.
+**Recomendações:**
+- Nunca compartilhe ou faça commit da chave secreta em repositórios públicos.
+- Em produção, armazene a chave em variáveis de ambiente, não diretamente no código.
 
-Se precisar de mais assistência, compartilhe os logs completos do erro para que seja possível analisar melhor.
+Por exemplo, usando variável de ambiente no `index.py`:
+
+```python
+import os
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'chave_insegura_padrao_para_desenvolvimento')
+```
+
+E defina a variável em seu ambiente (exemplo em Unix):
+
+```bash
+export FLASK_SECRET_KEY='valor_gerado_pelo_secrets'
+```
+
+Assim, sua aplicação ficará mais segura.
