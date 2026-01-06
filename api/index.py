@@ -5,7 +5,10 @@ from auth import auth_bp
 import models  # Espera-se um arquivo models.py com as funções usadas
 
 app = Flask(__name__)
+
+# Definição da chave secreta de maneira segura: utiliza variável de ambiente, valor padrão inseguro só para desenvolvimento
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'chave_insegura_padrao_para_desenvolvimento')
+
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
 @app.route('/', methods=['GET', 'POST'])
