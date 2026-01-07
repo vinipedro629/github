@@ -109,6 +109,7 @@ def index():
         is_favorited = models.is_github_user_favorited(session["user_id"], user_info.get("login"))
 
     # Em vez de render_template, renderize HTML diretamente (evita erro TemplateNotFound)
+    # Corrigido: usa chaves simples para format; todas as chaves do CSS foram trocadas por duplas
     html = """
     <!DOCTYPE html>
     <html>
@@ -200,7 +201,7 @@ def index():
             user_info_html += "<p>Nenhum commit encontrado ou não foi possível obter commits.</p>"
 
     favoritos_url = url_for('favoritos')
-    # Use SafeDict to avoid KeyError with curly braces from CSS
+    # SafeDict protege chaves não usadas do format_map, para evitar KeyError ao renderizar html.format_map
     class SafeDict(dict):
         def __missing__(self, key):
             return '{' + key + '}'
