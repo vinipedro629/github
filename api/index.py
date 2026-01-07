@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, request, session, redirect, url_for, flash, Markup
 
 from auth import auth_bp
 import models  # models.py deve conter as funções usadas abaixo
@@ -108,14 +108,104 @@ def index():
     if user_info and session.get("user_id"):
         is_favorited = models.is_github_user_favorited(session["user_id"], user_info.get("login"))
 
-    return render_template(
-        "index.html",
-        user_info=user_info,
-        repos=repos,
-        commits=commits,
-        selected_repo=selected_repo,
-        error=error,
-        is_favorited=is_favorited,
+    # Em vez de render_template, renderize HTML diretamente (evita erro TemplateNotFound)
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>GitHub User Lookup</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 2em; max-width: 700px; margin: auto; }
+          .error { color: red; }
+          .favorito { background: #f7f7aa; padding: .5em 1em; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <h1>Consulta de Usuário GitHub</h1>
+        <form method="post">
+            <label for="username">Usuário GitHub:</label>
+            <input name="username" id="username" required value="{username}">
+            <button type="submit">Buscar</button>
+            <br><br>
+            {repos_select}
+        </form>
+        {error_html}
+        {user_info_html}
+        <hr>
+        <a href="{favoritos_url}">Meus Favoritos</a>
+    </body>
+    </html>
+    """
+
+    # Repositórios select
+    repos_select = ""
+    if user_info and repos:
+        repos_select += '<label for="repo">Selecionar repositório:</label>'
+        repos_select += '<select name="repo" id="repo" onchange="this.form.submit()">'
+        repos_select += '<option value="">--</option>'
+        for repo in repos:
+            selected = 'selected' if repo["name"] == (selected_repo or "") else ''
+            repos_select += f'<option value="{repo["name"]}" {selected}>{repo["name"]}</option>'
+        repos_select += '</select><br><br>'
+
+    # Erros
+    error_html = ""
+    if error:
+        error_html = f'<p class="error">{error}</p>'
+
+    # Favorito (para usuário logado)
+    favorito_btn = ""
+    if user_info and session.get("user_id"):
+        fav_form = f'''
+        <form style="display:inline" method="post" action="{url_for('favorite_github_user', github_username=user_info['login'])}">
+            <button type="submit" class="favorito">{'Remover dos favoritos' if is_favorited else 'Adicionar aos favoritos'}</button>
+        </form>
+        '''
+        favorito_btn = fav_form
+
+    # Exibir user_info
+    user_info_html = ""
+    if user_info:
+        user_info_html += "<h2>Perfil</h2>"
+        avatar = user_info.get("avatar_url", "")
+        if avatar:
+            user_info_html += f'<img src="{avatar}" alt="avatar" width="80"><br>'
+        user_info_html += f'<b>Login:</b> {user_info.get("login", "")}<br>'
+        user_info_html += f'<b>Nome:</b> {user_info.get("name","")}<br>' if user_info.get("name") else ""
+        user_info_html += f'<b>Bio:</b> {user_info.get("bio","")}<br>' if user_info.get("bio") else ""
+        user_info_html += f'<b>Repositórios públicos:</b> {user_info.get("public_repos","")}'
+        user_info_html += "<br>" + favorito_btn + "<br>"
+        # Exibir repositórios
+        if repos:
+            user_info_html += "<h3>Repositórios</h3>"
+            user_info_html += "<ul>"
+            for repo in repos:
+                repo_url = repo.get("html_url", "")
+                name = repo.get("name","")
+                li_selected = ' style="font-weight:bold;"' if selected_repo == name else ""
+                user_info_html += f'<li{li_selected}><a href="{repo_url}" target="_blank">{name}</a></li>'
+            user_info_html += "</ul>"
+        # Exibir commits do repo selecionado
+        if selected_repo and commits:
+            user_info_html += f"<h3>Commits do repositório: {selected_repo}</h3>"
+            user_info_html += "<ul>"
+            for commit in commits[:10]:
+                msg = commit.get("commit", {}).get("message", "")
+                sha = commit.get("sha", "")[:7]
+                author = commit.get("commit", {}).get("author",{}).get("name","")
+                user_info_html += f"<li><b>{sha}</b> {msg} <i>(por {author})</i></li>"
+            user_info_html += "</ul>"
+        elif selected_repo and not commits:
+            user_info_html += "<p>Nenhum commit encontrado ou não foi possível obter commits.</p>"
+
+    favoritos_url = url_for('favoritos')
+    return html.format(
+        username=(username or ""),
+        repos_select=repos_select,
+        error_html=error_html,
+        user_info_html=user_info_html,
+        favoritos_url=favoritos_url
     )
 
 
@@ -141,7 +231,43 @@ def favoritos():
         return redirect(url_for("index"))
     user_id = session["user_id"]
     favoritos_list = models.list_github_favorites(user_id)
-    return render_template("favoritos.html", favoritos=favoritos_list)
+
+    # Renderiza diretamente os favoritos para evitar dependência de template externo
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Favoritos do GitHub</title>
+        <style>body { font-family: Arial, sans-serif; padding: 2em; max-width: 700px; margin: auto; }</style>
+    </head>
+    <body>
+      <h1>Favoritos</h1>
+      {mensagem}
+      <ul>
+        {favoritos_li}
+      </ul>
+      <a href="{index_url}">Voltar</a>
+    </body>
+    </html>
+    """
+    if not favoritos_list:
+        mensagem = "<i>Nenhum favorito ainda.</i>"
+    else:
+        mensagem = f"<p>Total: {len(favoritos_list)}</p>"
+    favoritos_li = ""
+    for fav in favoritos_list:
+        # fav pode ser str (login) ou dict - depende da model
+        if isinstance(fav, dict) and "github_username" in fav:
+            login = fav["github_username"]
+        else:
+            login = str(fav)
+        favoritos_li += f'<li><a href="{url_for("index")}?username={login}">{login}</a></li>'
+    return html.format(
+        mensagem=mensagem,
+        favoritos_li=favoritos_li,
+        index_url=url_for("index")
+    )
 
 
 # ATENÇÃO: Vercel/Python Runtime espera o objeto WSGI "app" neste arquivo.
