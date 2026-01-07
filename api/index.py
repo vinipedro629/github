@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, request, session, redirect, url_for, flash, Markup
+from flask import Flask, request, session, redirect, url_for, flash
 
 from auth import auth_bp
 import models  # models.py deve conter as funções usadas abaixo
