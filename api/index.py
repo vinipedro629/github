@@ -116,9 +116,9 @@ def index():
         <meta charset="utf-8" />
         <title>GitHub User Lookup</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 2em; max-width: 700px; margin: auto; }
-          .error { color: red; }
-          .favorito { background: #f7f7aa; padding: .5em 1em; border-radius: 6px; }
+          body {{ font-family: Arial, sans-serif; padding: 2em; max-width: 700px; margin: auto; }}
+          .error {{ color: red; }}
+          .favorito {{ background: #f7f7aa; padding: .5em 1em; border-radius: 6px; }}
         </style>
     </head>
     <body>
@@ -200,13 +200,17 @@ def index():
             user_info_html += "<p>Nenhum commit encontrado ou não foi possível obter commits.</p>"
 
     favoritos_url = url_for('favoritos')
-    return html.format(
+    # Use SafeDict to avoid KeyError with curly braces from CSS
+    class SafeDict(dict):
+        def __missing__(self, key):
+            return '{' + key + '}'
+    return html.format_map(SafeDict(
         username=(username or ""),
         repos_select=repos_select,
         error_html=error_html,
         user_info_html=user_info_html,
         favoritos_url=favoritos_url
-    )
+    ))
 
 
 @app.route("/favorite/<github_username>", methods=["POST"])
@@ -239,7 +243,7 @@ def favoritos():
     <head>
         <meta charset="utf-8" />
         <title>Favoritos do GitHub</title>
-        <style>body { font-family: Arial, sans-serif; padding: 2em; max-width: 700px; margin: auto; }</style>
+        <style>body {{ font-family: Arial, sans-serif; padding: 2em; max-width: 700px; margin: auto; }}</style>
     </head>
     <body>
       <h1>Favoritos</h1>
@@ -263,11 +267,14 @@ def favoritos():
         else:
             login = str(fav)
         favoritos_li += f'<li><a href="{url_for("index")}?username={login}">{login}</a></li>'
-    return html.format(
+    class SafeDict(dict):
+        def __missing__(self, key):
+            return '{' + key + '}'
+    return html.format_map(SafeDict(
         mensagem=mensagem,
         favoritos_li=favoritos_li,
         index_url=url_for("index")
-    )
+    ))
 
 
 # ATENÇÃO: Vercel/Python Runtime espera o objeto WSGI "app" neste arquivo.
