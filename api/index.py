@@ -15,8 +15,7 @@ app.register_blueprint(auth_bp, url_prefix="/auth")
 
 def get_github_user_info(username):
     """
-    Função inline para obter informação do GitHub (substituto dos helpers no módulo github.py).
-    Usa apenas requests da lib padrão, já que dependências externas não estão disponíveis no ambiente serverless.
+    Recupera informações de usuário do GitHub sem dependências externas.
     Retorna dict ou None.
     """
     import urllib.request
@@ -25,8 +24,9 @@ def get_github_user_info(username):
     if not username:
         return None
 
+    url = f"https://api.github.com/users/{username}"
     try:
-        with urllib.request.urlopen(f"https://api.github.com/users/{username}") as response:
+        with urllib.request.urlopen(url) as response:
             if response.status != 200:
                 return None
             return json.load(response)
@@ -35,14 +35,19 @@ def get_github_user_info(username):
 
 
 def get_github_user_repos(username):
+    """
+    Busca os repositórios públicos de um usuário do GitHub.
+    Retorna lista de dicts ou [].
+    """
     import urllib.request
     import json
 
     if not username:
         return []
 
+    url = f"https://api.github.com/users/{username}/repos"
     try:
-        with urllib.request.urlopen(f"https://api.github.com/users/{username}/repos") as response:
+        with urllib.request.urlopen(url) as response:
             if response.status != 200:
                 return []
             return json.load(response)
@@ -51,14 +56,19 @@ def get_github_user_repos(username):
 
 
 def get_github_repo_commits(username, repo_name):
+    """
+    Busca commits de um repositório público do GitHub.
+    Retorna lista de dicts ou [].
+    """
     import urllib.request
     import json
 
     if not username or not repo_name:
         return []
 
+    url = f"https://api.github.com/repos/{username}/{repo_name}/commits"
     try:
-        with urllib.request.urlopen(f"https://api.github.com/repos/{username}/{repo_name}/commits") as response:
+        with urllib.request.urlopen(url) as response:
             if response.status != 200:
                 return []
             return json.load(response)
@@ -134,6 +144,6 @@ def favoritos():
     return render_template("favoritos.html", favoritos=favoritos_list)
 
 
-# Adaptador para Vercel Serverless: expõe a aplicação Flask como handler WSGI
-def handler(environ, start_response):
-    return app(environ, start_response)
+# ATENÇÃO: Vercel/Python Runtime espera o objeto WSGI "app" neste arquivo.
+# Não defina handler() ou funções equivalentes que retornem o app (isso gera TypeError esperados em logs serverless).
+# Apenas exporte o objeto Flask "app".
